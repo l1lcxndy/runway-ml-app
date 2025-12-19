@@ -1593,14 +1593,20 @@
     }
 
     // Text to Image Generator
-    async function generateTextToImage() {
+    // ========================================
+// POLLINATIONS.AI - CLIENT-SIDE TEXT-TO-IMAGE
+// Replace your generateTextToImage() function with this
+// NO API KEY NEEDED - Works 100% free!
+// ========================================
+
+async function generateTextToImage() {
   const canvas = document.getElementById('textToImageCanvas');
   const ctx = canvas.getContext('2d');
   const prompt = document.getElementById('imagePrompt').value;
   const style = document.getElementById('imageStyle').value;
 
   if (!prompt.trim()) {
-    showSuccessMessage('Please enter a description for your image!');
+    showSuccessMessage('⚠️ Please enter a description for your image!');
     return;
   }
 
@@ -1610,84 +1616,107 @@
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   
   ctx.fillStyle = '#00ffff';
-  ctx.font = '24px Arial';
+  ctx.font = 'bold 28px Arial';
   ctx.textAlign = 'center';
-  ctx.fillText('🎨 Generating your image...', canvas.width / 2, canvas.height / 2 - 20);
+  ctx.fillText('🎨 AI is creating your image...', canvas.width / 2, canvas.height / 2 - 40);
   
   ctx.fillStyle = '#b0c4de';
-  ctx.font = '16px Arial';
-  ctx.fillText('This may take a few seconds', canvas.width / 2, canvas.height / 2 + 20);
+  ctx.font = '18px Arial';
+  ctx.fillText('This usually takes 10-20 seconds', canvas.width / 2, canvas.height / 2 + 10);
+  
+  ctx.font = '14px Arial';
+  ctx.fillStyle = '#888';
+  ctx.fillText('Please be patient...', canvas.width / 2, canvas.height / 2 + 40);
 
   try {
-    // Call our backend API
-    const response = await fetch('/api/generate-image', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        prompt: prompt,
-        style: style
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.status}`);
+    // Enhance prompt based on selected style
+    let enhancedPrompt = prompt;
+    let modelParam = 'flux';
+    
+    switch(style) {
+      case 'abstract':
+        enhancedPrompt = `abstract art style, ${prompt}, colorful, vibrant colors, artistic, modern`;
+        break;
+      case 'geometric':
+        enhancedPrompt = `geometric patterns, ${prompt}, clean lines, minimalist design, modern art`;
+        break;
+      case 'gradient':
+        enhancedPrompt = `beautiful gradient colors, ${prompt}, smooth transitions, dreamy atmosphere`;
+        break;
+      case 'particle':
+        enhancedPrompt = `glowing particles, ${prompt}, neon lights, digital art, sci-fi style`;
+        break;
+      default:
+        enhancedPrompt = `${prompt}, high quality, detailed, professional photography`;
     }
 
-    const data = await response.json();
+    console.log('🎨 Generating image with Pollinations.ai');
+    console.log('📝 Prompt:', enhancedPrompt);
 
-    if (data.success && data.imageUrl) {
-      // Load the generated image
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
+    // Generate unique seed for each image
+    const seed = Math.floor(Math.random() * 1000000);
+    
+    // Pollinations.ai public API URL
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=1024&height=768&seed=${seed}&model=${modelParam}&nologo=true&enhance=true`;
+    
+    console.log('🔗 Image URL:', imageUrl);
+
+    // Create and load the image
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    
+    // Promise to handle image loading
+    const imageLoaded = new Promise((resolve, reject) => {
+      let loadTimeout;
       
       img.onload = function() {
-        // Draw the image on canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Calculate dimensions to fit canvas while maintaining aspect ratio
-        const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
-        const x = (canvas.width - img.width * scale) / 2;
-        const y = (canvas.height - img.height * scale) / 2;
-        
-        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
-        showSuccessMessage('✨ Image generated successfully!');
+        clearTimeout(loadTimeout);
+        console.log('✅ Image loaded successfully!');
+        resolve(img);
       };
-
+      
       img.onerror = function() {
-        // Fallback: show the URL if image loading fails
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#0a0e27';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        ctx.fillStyle = '#00ffff';
-        ctx.font = '18px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('Image generated! Click below to view:', canvas.width / 2, canvas.height / 2 - 40);
-        
-        ctx.fillStyle = '#b0c4de';
-        ctx.font = '14px Arial';
-        ctx.fillText('(Right-click the link and open in new tab)', canvas.width / 2, canvas.height / 2);
-        
-        // Create a clickable link overlay
-        const linkDiv = document.createElement('div');
-        linkDiv.innerHTML = `<a href="${data.imageUrl}" target="_blank" style="color: #00ffff; font-size: 16px;">View Generated Image</a>`;
-        linkDiv.style.textAlign = 'center';
-        linkDiv.style.marginTop = '20px';
-        canvas.parentElement.appendChild(linkDiv);
-        
-        showSuccessMessage('Image generated! Click the link to view.');
+        clearTimeout(loadTimeout);
+        console.error('❌ Image failed to load');
+        reject(new Error('Failed to load image from Pollinations.ai'));
       };
+      
+      // Timeout after 60 seconds
+      loadTimeout = setTimeout(() => {
+        console.error('⏱️ Image loading timeout');
+        reject(new Error('Image generation took too long. Please try again.'));
+      }, 60000);
+    });
 
-      img.src = data.imageUrl;
-
-    } else {
-      throw new Error('Invalid response from server');
-    }
+    // Start loading the image
+    img.src = imageUrl;
+    
+    // Wait for image to load
+    const loadedImage = await imageLoaded;
+    
+    // Clear canvas and draw the generated image
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Fill background
+    ctx.fillStyle = '#0a0e27';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Calculate dimensions to fit canvas while maintaining aspect ratio
+    const scale = Math.min(canvas.width / loadedImage.width, canvas.height / loadedImage.height);
+    const scaledWidth = loadedImage.width * scale;
+    const scaledHeight = loadedImage.height * scale;
+    const x = (canvas.width - scaledWidth) / 2;
+    const y = (canvas.height - scaledHeight) / 2;
+    
+    // Draw the image centered
+    ctx.drawImage(loadedImage, x, y, scaledWidth, scaledHeight);
+    
+    // Success message
+    showSuccessMessage('✨ Image generated successfully!');
+    console.log('🎉 Generation complete!');
 
   } catch (error) {
-    console.error('Error generating image:', error);
+    console.error('💥 Error generating image:', error);
     
     // Show error message on canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1695,17 +1724,28 @@
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     ctx.fillStyle = '#ff4444';
-    ctx.font = '20px Arial';
+    ctx.font = 'bold 24px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('❌ Error generating image', canvas.width / 2, canvas.height / 2 - 20);
+    ctx.fillText('❌ Oops! Something went wrong', canvas.width / 2, canvas.height / 2 - 60);
+    
+    ctx.fillStyle = '#ff8888';
+    ctx.font = '16px Arial';
+    ctx.fillText(error.message, canvas.width / 2, canvas.height / 2 - 20);
     
     ctx.fillStyle = '#b0c4de';
     ctx.font = '14px Arial';
-    ctx.fillText('Please try again or check your connection', canvas.width / 2, canvas.height / 2 + 20);
+    ctx.fillText('Tips:', canvas.width / 2, canvas.height / 2 + 20);
+    ctx.fillText('• Try a simpler prompt', canvas.width / 2, canvas.height / 2 + 45);
+    ctx.fillText('• Wait a moment and try again', canvas.width / 2, canvas.height / 2 + 70);
+    ctx.fillText('• Check your internet connection', canvas.width / 2, canvas.height / 2 + 95);
     
-    showSuccessMessage('Error: ' + error.message);
+    showSuccessMessage('❌ Error: ' + error.message);
   }
 }
+
+// ========================================
+// That's it! Just this one function!
+// ========================================
 
     // Video Editor
     function loadVideo(event) {
