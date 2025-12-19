@@ -50,9 +50,9 @@ app.post('/api/generate-image', async (req, res) => {
 
     console.log('Generating image with prompt:', enhancedPrompt);
 
-    // Call Hugging Face Inference API
+    // Call Hugging Face Inference API (Updated endpoint)
     const response = await fetch(
-      'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1',
+      'https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell',
       {
         method: 'POST',
         headers: {
